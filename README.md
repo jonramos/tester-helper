@@ -6,7 +6,7 @@ This project uses a few Python packages to create a system tray app with a globa
 ## Dependences
 ```bash
 python -m pip install --upgrade pip
-python -m pip install pystray pynput pillow
+python -m pip install pystray pynput pillow pyperclip
 ```
 
 ## Run
@@ -14,6 +14,12 @@ python -m pip install pystray pynput pillow
 ```bash
 python main.py
 ```
+
+## Keyboard shortcuts
+
+- Ctrl+1: Generate a CPF
+- Ctrl+2: Generate a numeric CNPJ
+- Ctrl+3: Generate an alphanumeric CNPJ
 
 ## Dependency summary
 

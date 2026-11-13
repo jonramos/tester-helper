@@ -1,7 +1,7 @@
 import random
-import tkinter as tk
-
+import pyperclip
 import pystray
+
 from pynput import keyboard
 from PIL import Image, ImageDraw
 
@@ -28,12 +28,17 @@ def generate_cpf():
 
 def generate_cnpj():
     digits = [random.randint(0, 9) for _ in range(12)]
+    while len(set(digits)) == 1:
+        digits = [random.randint(0, 9) for _ in range(12)]
 
     def checksum(base_digits):
-        weights = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+        weights = [
+            2 + ((len(base_digits) - index - 1) % 8)
+            for index in range(len(base_digits))
+        ]
         total = sum(digit * weight for digit, weight in zip(base_digits, weights))
-        result = total % 11
-        return 0 if result < 2 else 11 - result
+        remainder = total % 11
+        return 0 if remainder < 2 else 11 - remainder
 
     first_digit = checksum(digits)
     second_digit = checksum(digits + [first_digit])
@@ -44,13 +49,37 @@ def generate_cnpj():
     copy_to_clipboard(formatted_cnpj)
     return formatted_cnpj
 
+
+def generate_alphanumeric_cnpj():
+    characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    base = [random.choice(characters) for _ in range(12)]
+    while not any(character.isalpha() for character in base) or len(set(base)) == 1:
+        base = [random.choice(characters) for _ in range(12)]
+
+    def checksum(base_characters):
+        weights = [
+            2 + ((len(base_characters) - index - 1) % 8)
+            for index in range(len(base_characters))
+        ]
+        total = sum(
+            (ord(character) - 48) * weight
+            for character, weight in zip(base_characters, weights)
+        )
+        remainder = total % 11
+        return "0" if remainder < 2 else str(11 - remainder)
+
+    first_check_digit = checksum(base)
+    second_check_digit = checksum(base + [first_check_digit])
+    check_digits = first_check_digit + second_check_digit
+    cnpj = "".join(base) + check_digits
+    formatted_cnpj = f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
+    print(formatted_cnpj)
+    copy_to_clipboard(formatted_cnpj)
+    return formatted_cnpj
+
+
 def copy_to_clipboard(text):
-    root = tk.Tk()
-    root.withdraw()
-    root.clipboard_clear()
-    root.clipboard_append(text)
-    root.update()
-    root.destroy()
+   pyperclip.copy(text)
 
 
 # Helper function to generate a simple colored icon dynamically
@@ -70,11 +99,18 @@ def on_cpf_hotkey():
 def on_cnpj_hotkey():
     generate_cnpj()
 
+
+def on_alphanumeric_cnpj_hotkey():
+    generate_alphanumeric_cnpj()
+
+
 def on_clicked(icon, item):
     if item.text == "Generate CPF":
         generate_cpf()
     elif item.text == "Generate CNPJ":
         generate_cnpj()
+    elif item.text == "Generate Alphanumeric CNPJ":
+        generate_alphanumeric_cnpj()
     elif item.text == "Exit":
         if 'shortcut' in globals() and shortcut is not None:
             shortcut.stop()
@@ -85,6 +121,7 @@ def start_global_shortcut():
     hotkeys = keyboard.GlobalHotKeys({
         '<ctrl>+1': on_cpf_hotkey,
         '<ctrl>+2': on_cnpj_hotkey,
+        '<ctrl>+3': on_alphanumeric_cnpj_hotkey,
     })
     hotkeys.start()
     return hotkeys
@@ -98,6 +135,7 @@ icon = pystray.Icon(
     menu=pystray.Menu(
         pystray.MenuItem("Generate CPF", on_clicked),
         pystray.MenuItem("Generate CNPJ", on_clicked),
+        pystray.MenuItem("Generate Alphanumeric CNPJ", on_clicked),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Exit", on_clicked)
     )
